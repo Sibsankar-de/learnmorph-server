@@ -29,11 +29,11 @@ const userSchema = new Schema({
 });
 
 // hash password
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) next();
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return; 
+
     this.password = await bcrypt.hash(this.password, 10);
-    next();
-})
+});
 
 // verify user password
 userSchema.methods.checkPassword = async function (password) {

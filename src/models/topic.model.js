@@ -1,0 +1,126 @@
+import mongoose from "mongoose";
+
+const noteSchema = new mongoose.Schema({
+    title: {
+        type: String
+    },
+    description: {
+        type: String
+    }
+}, { _id: false });
+
+// quiz question schema
+const questionSchema = new Schema({
+    id: {
+        type: Number,
+        required: true
+    },
+    question: {
+        type: String,
+        required: true
+    },
+    options: [{
+        id: {
+            type: Number
+        },
+        value: {
+            type: String
+        }
+    }]
+}, { _id: false });
+
+// quiz solution schema
+const solutionSchema = new Schema({
+    questionId: {
+        type: Number,
+        required: true
+    },
+    question: {
+        type: String,
+        required: true
+    },
+    answer: {
+        optionId: {
+            type: Number,
+            required: true
+        },
+        optionIndex: {
+            type: Number,
+            required: true
+        },
+        value: {
+            type: String
+        },
+        explaination: {
+            type: String
+        }
+    }
+}, { _id: false });
+
+// quiz attempt schema
+const attemptSchema = new Schema({
+    id: {
+        type: String,
+        required: true
+    },
+    result: {
+        type: [Object],
+        default: []
+    },
+    timeTaken: {
+        type: Number
+    },
+    score: {
+        type: Number
+    },
+    isAllCorrect: {
+        type: Boolean
+    },
+    attemptDate: {
+        type: Date,
+        default: Date.now()
+    }
+}, { _id: false });
+
+const topicSchema = new mongoose.Schema({
+    slug: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    userId: {
+        type: mongoose.Types.ObjectId,
+        required: true,
+        ref: "User"
+    },
+    courseId: {
+        type: mongoose.Types.ObjectId,
+        ref: "Course"
+    },
+    title: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    notes: {
+        type: [noteSchema],
+        default: true
+    },
+    questions: {
+        type: [questionSchema],
+        default: []
+    },
+    solutions: {
+        type: [solutionSchema],
+        default: []
+    },
+    attempts: {
+        type: [attemptSchema],
+        default: []
+    }
+}, { timestamps: true });
+
+export const Topic = mongoose.model("Topic", topicSchema);
