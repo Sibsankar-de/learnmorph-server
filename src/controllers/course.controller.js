@@ -73,7 +73,8 @@ const courseMapParser = StructuredOutputParser.fromZodSchema(LearningPathSchema)
 const coursePromptTemplate = ChatPromptTemplate.fromMessages([
     ["system", COURSE_SYSTEM_PROMPT],
     ["user", "Generate a learning path based on the following requirements: {prompt}"],
-])
+]);
+
 
 export const createCourse = asyncHandler(async (req, res) => {
     const { userPrompt } = req.body;
@@ -97,18 +98,23 @@ export const createCourse = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create learning path");
     }
 
-    let course = output;
-    const slug = generateSlug(course.title);
+    let generatedCourse = output;
+    const slug = generateSlug(generatedCourse.title);
+    generatedCourse.topics = generatedCourse.topics.map(topic => ({
+        ...topic,
+        slug: generateSlug(topic.title),
+        isActive: false
+    }))
 
     const newCourse = await Course.create({
         userId,
-        title: course.title,
-        description: course.description,
-        tags: course.tags,
+        title: generatedCourse.title,
+        description: generatedCourse.description,
+        tags: generatedCourse.tags,
         slug: slug,
-        level: course.level,
-        topics: course.topics,
-        topicsCount: course.topics.length
+        level: generatedCourse.level,
+        topics: generatedCourse.topics,
+        topicsCount: generatedCourse.topics.length
     });
 
     if (!newCourse) throw new ApiError(500, "Failed to create learning path");
@@ -116,4 +122,13 @@ export const createCourse = asyncHandler(async (req, res) => {
     return res.status(200)
         .json(new ApiResponse(200, newCourse, "New course created"));
 
+});
+
+export const getUserCourses = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    const courses = await Course.find({ userId });
+
+    return res.status(200)
+        .json(new ApiResponse(200, courses, "User courses fetched"));
 });

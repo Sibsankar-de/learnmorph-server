@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Schema } from "mongoose";
 
 const noteSchema = new mongoose.Schema({
     title: {
@@ -59,26 +60,14 @@ const solutionSchema = new Schema({
 
 // quiz attempt schema
 const attemptSchema = new Schema({
-    id: {
-        type: String,
-        required: true
-    },
-    result: {
-        type: [Object],
-        default: []
-    },
-    timeTaken: {
+    questionId: {
         type: Number
     },
-    score: {
+    answerId: {
         type: Number
     },
-    isAllCorrect: {
+    isCorrect: {
         type: Boolean
-    },
-    attemptDate: {
-        type: Date,
-        default: Date.now()
     }
 }, { _id: false });
 
@@ -107,7 +96,7 @@ const topicSchema = new mongoose.Schema({
     },
     notes: {
         type: [noteSchema],
-        default: true
+        default: []
     },
     questions: {
         type: [questionSchema],
@@ -120,6 +109,14 @@ const topicSchema = new mongoose.Schema({
     attempts: {
         type: [attemptSchema],
         default: []
+    },
+    progress: {
+        type: Number,
+        default: 0
+    },
+    isCompleted: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

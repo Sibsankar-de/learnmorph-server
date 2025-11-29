@@ -20,12 +20,12 @@ app.get("/ping", (req, res) => {
 
 import userRouter from "./routes/user.routes.js"
 import courseRouter from "./routes/course.routes.js";
-// import requestRouter from "./routes/request.routes.js";
+import topicRouter from "./routes/topic.routes.js";
 // import aiRouter from "./routes/ai.routes.js";
 
 app.use("/api/users", userRouter);
 app.use("/api/learning-paths", courseRouter);
-// app.use("/api/v1/request", requestRouter);
+app.use("/api/topics", topicRouter);
 // app.use("/api/v1/ai", aiRouter);
 
 export { app };
