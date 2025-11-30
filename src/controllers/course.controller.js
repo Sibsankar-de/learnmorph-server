@@ -51,6 +51,12 @@ STYLE RULES
     - Descriptions should be informative but not overly long.
     - Tags should be relevant to the course and topic.
     - Keep the writing neutral, educational, and accurate.
+
+CONTEXT
+    - subject - {subject}
+    - knowledgeLevel: {knowledgeLevel},
+    - difficultyLevel: {difficultyLevel},
+    - learningGoal: {learningGoal},
 `
 
 const TopicSchema = z.object({
@@ -72,15 +78,15 @@ const courseMapParser = StructuredOutputParser.fromZodSchema(LearningPathSchema)
 
 const coursePromptTemplate = ChatPromptTemplate.fromMessages([
     ["system", COURSE_SYSTEM_PROMPT],
-    ["user", "Generate a learning path based on the following requirements: {prompt}"],
+    ["user", "Generate a learning path for {subject} based on the given details. Knowledge Level: {knowledgeLevel}, Difficulty Level: {difficultyLevel}, Learning Goal: {learningGoal}. Ensure the output is valid JSON as per the specified format."],
 ]);
 
 
 export const createCourse = asyncHandler(async (req, res) => {
-    const { userPrompt } = req.body;
+    const { context } = req.body;
     const userId = req.user._id;
 
-    if (!userPrompt) throw new ApiError(400, "User prompt is request");
+    if (!context) throw new ApiError(400, "User prompt is request");
 
     const chain = RunnableSequence.from([
         coursePromptTemplate,
@@ -91,7 +97,10 @@ export const createCourse = asyncHandler(async (req, res) => {
 
     // get output from the chain
     const output = await chain.invoke({
-        prompt: userPrompt,
+        subject: context.subject,
+        knowledgeLevel: context.knowledgeLevel,
+        difficultyLevel: context.difficultyLevel,
+        learningGoal: context.learningGoal
     });
 
     if (!output) {

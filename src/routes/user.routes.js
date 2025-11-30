@@ -12,7 +12,7 @@ router.route("/refresh-token").post(verifyJwt, refreshAccessToken);
 router.route("/check-auth").get(verifyJwt, checkAuth);
 
 router.route("/update-password").patch(verifyJwt, updatePassword);
-router.route("/update-user").patch(verifyJwt, updateUser);
+router.route("/update-profile").patch(verifyJwt, updateUser);
 router.route("/update-avatar").patch(verifyJwt, upload.single('avatar'), updateAvatar);
 
 router.route("/current-user").get(verifyJwt, getCurrentUser);

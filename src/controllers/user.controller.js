@@ -50,7 +50,7 @@ export const generateAccessAndRefreshToken = async (userId) => {
 }
 
 export const loginUser = asyncHandler(async (req, res) => {
-    const { email, phoneNo, password } = req.body;
+    const { email,password } = req.body;
     if (!email || !password) throw new ApiError(400, "Fields are required");
 
     const user = await User.findOne({ email });

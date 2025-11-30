@@ -71,17 +71,25 @@ const learningNotePromptTemplate = ChatPromptTemplate.fromMessages([
 ])
 
 export const createTopicNotes = asyncHandler(async (req, res) => {
-    const { slug, courseId, topic_title, topic_description } = req.body;
+    const { slug, courseId } = req.body;
     const userId = req.user._id;
 
-    if (!topic_title || !topic_description || !slug) {
-        throw new ApiError(400, "Topic title and description and slug are required");
+    if (!slug) {
+        throw new ApiError(400, "slug is required");
+    }
+    const course = await Course.findById(courseId);
+    const topics = course.topics;
+    const topic_title = topics.find(t => t.slug === slug)?.title;
+    const topic_description = topics.find(t => t.slug === slug)?.description;
+
+    if (!topic_title || !topic_description) {
+        throw new ApiError(400, "Topic title and description are required");
     }
 
     let topic = await Topic.findOne({ slug, courseId, userId });
     if (topic && topic.notes.length > 0) {
         return res.status(200)
-            .json(new ApiResponse(200, topic.notes, "Topic notes fetched"));
+            .json(new ApiResponse(200, topic, "Topic notes fetched"));
     }
     else if (!topic) {
         topic = await Topic.create({
@@ -108,7 +116,7 @@ export const createTopicNotes = asyncHandler(async (req, res) => {
 
     await topic.save({ validateBeforeSave: false });
 
-    return res.status(200).json(new ApiResponse(200, topic.notes, "Topic notes generated successfully"));
+    return res.status(200).json(new ApiResponse(200, topic, "Topic notes generated successfully"));
 });
 
 const QUESTION_SYSTEM_PROMPT = `
@@ -210,17 +218,22 @@ const quizOutputSchema = z.object({
 const quizParser = StructuredOutputParser.fromZodSchema(quizOutputSchema);
 
 export const createTopicQuiz = asyncHandler(async (req, res) => {
-    const { slug, courseId, topic_title, topic_description } = req.body;
+    const { slug, courseId } = req.body;
     const userId = req.user._id;
 
-    if (!topic_title || !topic_description || !slug) {
-        throw new ApiError(400, "Quiz title and description and slug are required");
+    if (!slug) {
+        throw new ApiError(400, "Slug is required");
     }
+
+    const course = await Course.findById(courseId);
+    const topics = course.topics;
+    const topic_title = topics.find(t => t.slug === slug)?.title;
+    const topic_description = topics.find(t => t.slug === slug)?.description;
 
     let topic = await Topic.findOne({ slug, courseId, userId });
     if (topic && topic.questions.length > 0) {
         return res.status(200)
-            .json(new ApiResponse(200, topic.questions, "Topic quiz fetched"));
+            .json(new ApiResponse(200, topic, "Topic quiz fetched"));
     }
     else if (!topic) {
         topic = await Topic.create({
@@ -276,7 +289,7 @@ export const createTopicQuiz = asyncHandler(async (req, res) => {
     topic.solutions = solutions;
     await topic.save({ validateBeforeSave: false });
 
-    return res.status(200).json(new ApiResponse(200, topic.questions, "Topic quiz generated successfully"));
+    return res.status(200).json(new ApiResponse(200, topic, "Topic quiz generated successfully"));
 });
 
 export const checkAnswer = asyncHandler(async (req, res) => {
@@ -317,34 +330,35 @@ export const checkAnswer = asyncHandler(async (req, res) => {
 });
 
 function mergeTopics(allTopics, createdTopics) {
-    // Step 1: Map createdTopics for fast lookup
-    const createdMap = new Map(createdTopics.map(t => [t.slug, t]));
+  // Step 1: Map createdTopics for lookup
+  const createdMap = new Map(createdTopics.map(t => [t.slug, t]));
 
-    // Step 2: Merge both lists by slug
-    const merged = allTopics.map(topic => ({
-        ...topic,
-        ...(createdMap.get(topic.slug) || {}),
-        isActive: false  // default
-    }));
+  // Step 2: Merge lists by slug
+  const merged = allTopics.map(topic => {
+    const override = createdMap.get(topic.slug);
+    return {
+      ...topic,
+      ...(override || {}),
+      isActive: !!override  // active if it's part of createdTopics
+    };
+  });
 
-    // Step 3: Determine active index
-    let activeIndex = 0;
+  // Step 3: If there are created topics, activate the next one too
+  if (createdTopics.length > 0) {
+    const lastCreatedSlug = createdTopics[createdTopics.length - 1].slug;
+    const lastIndex = merged.findIndex(t => t.slug === lastCreatedSlug);
 
-    if (createdTopics.length > 0) {
-        // Get slug of last created topic
-        const lastCreatedSlug = createdTopics[createdTopics.length - 1].slug;
+    const nextIndex = lastIndex + 1;
 
-        // Find its index in merged array
-        const lastIndex = merged.findIndex(t => t.slug === lastCreatedSlug);
-
-        // Active item = next item after last created
-        activeIndex = Math.min(lastIndex + 1, merged.length - 1);
+    if (merged[nextIndex]) {
+      merged[nextIndex].isActive = true; // activate next topic
     }
+  } else {
+    // No created topics → activate first topic
+    if (merged.length > 0) merged[0].isActive = true;
+  }
 
-    // Step 4: Assign isActive to selected item
-    merged[activeIndex].isActive = true;
-
-    return merged;
+  return merged;
 }
 
 
@@ -353,7 +367,7 @@ export const getTopics = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     const createdTopics = await Topic.find({ courseId, userId });
-    const allTopics = Course.findById(courseId).select("topics");
+    const allTopics = await Course.findById(courseId).select("topics");
 
     const topicList = mergeTopics(allTopics.topics, createdTopics);
 
