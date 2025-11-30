@@ -8,6 +8,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 })
 
+
 const uploadOnClodinary = async (localPath) => {
     try {
         if (!localPath) return null
@@ -19,6 +20,7 @@ const uploadOnClodinary = async (localPath) => {
         return response;
     } catch (error) {
         fs.unlinkSync(localPath)
+        console.error("Cloudinary upload error: ", error);
         throw new ApiError(400, "Cloudinary upload failed")
     }
 
