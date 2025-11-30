@@ -182,8 +182,8 @@ export const updatePassword = asyncHandler(async (req, res) => {
 })
 
 export const updateUser = asyncHandler(async (req, res) => {
-    const { username, email } = req.body;
-    if ([username, email].some(e => e === "")) throw new ApiError("All fields are required");
+    const { userName, email } = req.body;
+    if ([userName, email].some(e => e === "")) throw new ApiError("All fields are required");
     const currentUser = await User.findById(req.user?._id);
     const existedUser = await User.findOne({ email });
     if (existedUser && existedUser?.email !== currentUser.email) throw new ApiError(402, "Email already in use");
@@ -191,7 +191,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(req.user?._id,
         {
             $set: {
-                username,
+                userName,
                 email
             }
         },

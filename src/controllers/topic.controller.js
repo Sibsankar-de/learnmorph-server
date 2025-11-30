@@ -315,7 +315,7 @@ export const checkAnswer = asyncHandler(async (req, res) => {
 
     if (topic.progress < 100) {
         const progress = (topic.attempts / topic.questions) * 100;
-        topic.progress = progress;
+        await topic.findByIdAndUpdate(topic._id, { progress }, { new: true });
     }
     topic.save({ validateBeforeSave: false });
 
